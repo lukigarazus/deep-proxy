@@ -1,33 +1,39 @@
-/**
- * Some predefined delays (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
+import { Path } from './types/index';
+import { BATCH } from './constants';
+
+type GlobalKeys = {
+  [key in symbol]: (target: object, key: string, path, globalState) => any;
+};
+
+interface DeepProxyConfig {
+  target: object;
+  globalState: object;
+  globalKeys: GlobalKeys;
+  history: boolean;
+  onGet: (target: object, key: string, path: Path, globalState: object) => any;
+  onSet: () => any;
+  onDelete: () => any;
 }
 
-/**
- * Returns a Promise<string> that resolves after given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - Number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
-  );
-}
+const attachDefaultGlobalKeys = (globalKeys: GlobalKeys) => {
+  globalKeys[BATCH] = (_, __, ___, globalState) => {
+    globalState[BATCH] = !globalState[BATCH];
+  };
+};
 
-// Below are examples of using TSLint errors suppression
-// Here it is suppressing missing type definitions for greeter function
-
-// tslint:disable-next-line typedef
-export async function greeter(name) {
-  // tslint:disable-next-line no-unsafe-any no-return-await
-  return await delayedHello(name, Delays.Long);
-}
+export const deepProxy = ({
+  target,
+  globalState,
+  globalKeys,
+  history,
+  onGet,
+  onSet,
+  onDelete,
+}: DeepProxyConfig) => {
+  let historyObj = [];
+  if (history) {
+    historyObj = new Proxy(historyObj, {});
+  }
+  attachDefaultGlobalKeys(globalKeys);
+  return new Proxy(target, {});
+};
