@@ -10,7 +10,7 @@ This is an implementation of deep proxy with a twist. Unlike the most popular de
 
 ### Performance issues
 
-This is a graph showing the difference in milliseconds (y axis) needed to perform various number (x axis) of sets and gets (orange and blue respectively) between an object created with this package and a regular one.
+This is a graph showing the difference in milliseconds (y axis) needed to perform various number (x axis) of sets, gets and deletes (orange, blue and red, respectively) between an object created with this package and a regular one.
 
 ![withHistory](withHistory.png 'With History')
 

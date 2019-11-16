@@ -11,8 +11,8 @@ const { plot } = require('../visualize');
 const TEST_KEY = Symbol('test-key');
 
 const performanceTester = {
-  proxy: { setting: [], getting: [] },
-  object: { setting: [], getting: [] },
+  proxy: { setting: [], getting: [], deleting: [] },
+  object: { setting: [], getting: [], deleting: [] },
   start: undefined,
   timer(type, action) {
     if (!this.start) {
@@ -32,7 +32,11 @@ const performanceTester = {
     this.proxy.getting.forEach((el, i) =>
       gettingStats.push(Math.floor(el - this.object.getting[i])),
     );
-    return { gettingStats, settingStats };
+    const deletingStats = [];
+    this.proxy.deleting.forEach((el, i) =>
+      deletingStats.push(Math.floor(el - this.object.deleting[i])),
+    );
+    return { gettingStats, settingStats, deletingStats };
   },
 };
 
@@ -112,7 +116,7 @@ describe('deepProxy', () => {
     expect(state.b).toEqual(3);
     expect(state.c).toEqual(4);
   });
-  it.skip('Performance test', () => {
+  it('Performance test', () => {
     const loopsCases = Array(10)
       .fill(undefined)
       .map((el, i) => i * 100);
@@ -135,6 +139,15 @@ describe('deepProxy', () => {
         }
       }
       performanceTester.timer('proxy', 'getting');
+      performanceTester.timer();
+      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+        for (let i = 1; i <= loops; i++) {
+          const key = `${letter}${i}`;
+          delete state[key].b;
+          delete state[key];
+        }
+      }
+      performanceTester.timer('proxy', 'deleting');
       const obj = {};
       performanceTester.timer();
       for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
@@ -154,12 +167,38 @@ describe('deepProxy', () => {
         }
       }
       performanceTester.timer('object', 'getting');
+      performanceTester.timer();
+      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+        for (let i = 1; i <= loops; i++) {
+          const key = `${letter}${i}`;
+          delete obj[key].b;
+          delete obj[key];
+        }
+      }
+      performanceTester.timer('object', 'deleting');
     }
-    const { gettingStats, settingStats } = performanceTester.getResult();
+    const {
+      gettingStats,
+      settingStats,
+      deletingStats,
+    } = performanceTester.getResult();
     plot(
       [
-        ...gettingStats.map((el, i) => ({ x: loopsCases[i], y: el, c: 0 })),
-        ...settingStats.map((el, i) => ({ x: loopsCases[i], y: el, c: 1 })),
+        ...gettingStats.map((el, i) => ({
+          x: loopsCases[i] * 26,
+          y: el,
+          c: 0,
+        })),
+        ...settingStats.map((el, i) => ({
+          x: loopsCases[i] * 26,
+          y: el,
+          c: 1,
+        })),
+        ...deletingStats.map((el, i) => ({
+          x: loopsCases[i] * 26,
+          y: el,
+          c: 2,
+        })),
       ],
       config.history ? 'withHistory' : 'withoutHistory',
     );

@@ -24,8 +24,8 @@ interface DeepProxyConfig {
     path: Path,
     internalGlobalState: object,
   ) => any;
-  onSet?: () => any;
-  onDelete?: () => any;
+  onSet?: (target, key, value, path, internalGlobalState) => any;
+  onDelete?: (target, key, path, internalGlobalState) => any;
 }
 
 const attachDefaultGlobalKeys = (globalKeys: GlobalKeys) => {
@@ -40,8 +40,16 @@ const getProxyObject = ({
   globalState,
   internalGlobalState,
   onGet = () => {},
-  onSet = () => {},
-  onDelete = () => {},
+  onSet = (target, key, value, path, internalGlobalState) => {
+    let a = [target, key, value, path, internalGlobalState];
+    a = [];
+    return Number(a) + 2;
+  },
+  onDelete = (target, key, path, internalGlobalState) => {
+    let a = [target, key, path, internalGlobalState];
+    a = [];
+    return Number(a) + 2;
+  },
   path,
 }: DeepProxyConfig & {
   path: Path;
@@ -98,6 +106,30 @@ const getProxyObject = ({
         }
       }
       target[key] = value;
+      // TODO: This should be handled differently
+      internalGlobalState[QUICK_CHANGE] = true;
+      setOnAllPathLevels(internalGlobalState.rootTarget, path);
+      internalGlobalState[QUICK_CHANGE] = false;
+      onSet(target, key, value, path, internalGlobalState);
+      return true;
+    },
+    deleteProperty(target: object, key: string) {
+      if (internalGlobalState[QUICK_CHANGE]) {
+        delete target[key];
+      }
+      if (internalGlobalState.history) {
+        const changeDescription: ChangeDescription = {
+          path: path.concat(key),
+          oldValue: target[key],
+          // TODO: This should be handled differently
+          newValue: undefined,
+        };
+        if (!internalGlobalState.skipHistoryUpdate) {
+          historyObj.history.push(changeDescription);
+        }
+      }
+      delete target[key];
+      // TODO: This should be handled differently
       internalGlobalState[QUICK_CHANGE] = true;
       setOnAllPathLevels(internalGlobalState.rootTarget, path);
       internalGlobalState[QUICK_CHANGE] = false;
