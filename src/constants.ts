@@ -22,3 +22,6 @@ export const CHANGED = Symbol('changed');
 
 // This is used to enable/disable quick change mode
 export const QUICK_CHANGE = Symbol('quick_change');
+
+// This is used to retrieve the original object from a proxy
+export const TARGET = Symbol('target');

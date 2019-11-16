@@ -5,6 +5,7 @@ const {
   NEXT,
   HISTORY,
   HISTORY_BATCH,
+  CHANGED,
 } = require('../src/constants');
 const { plot } = require('../visualize');
 
@@ -49,6 +50,7 @@ const getState = () => {
     globalState,
     globalKeys,
     history: true,
+    deletion: false,
   };
   const state = deepProxy(config);
   return { config, state };
@@ -116,10 +118,10 @@ describe('deepProxy', () => {
     expect(state.b).toEqual(3);
     expect(state.c).toEqual(4);
   });
-  it('Performance test', () => {
-    const loopsCases = Array(10)
+  it.skip('Performance test', () => {
+    const loopsCases = Array(40)
       .fill(undefined)
-      .map((el, i) => i * 100);
+      .map((el, i) => i * 10);
     for (const loops of loopsCases) {
       performanceTester.timer();
       for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
@@ -200,8 +202,20 @@ describe('deepProxy', () => {
           c: 2,
         })),
       ],
-      config.history ? 'withHistory' : 'withoutHistory',
+      (() => {
+        const history = config.history ? 'history' : 'no history';
+        const deletion = config.deletion ? 'deletion' : 'no deletion';
+        return `performance - ${history} - ${deletion}`;
+      })(),
     );
     expect(2).toEqual(2);
+  });
+  it('Changes are saved', async () => {
+    state.a = {};
+    expect(state[CHANGED]).toEqual(true);
+    state.a.b = {};
+    expect(state.a[CHANGED]).toEqual(true);
+    state.a.b.c = 2;
+    expect(state.a.b[CHANGED]).toEqual(true);
   });
 });

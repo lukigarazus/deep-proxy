@@ -1,7 +1,12 @@
 import { Path, History, ChangeDescription } from './types/index';
 import { IS_PROXY, QUICK_CHANGE } from './constants';
 import { DEFAULT_GLOBAL_KEYS } from './defaultGlobalKeys';
-import { callOrValue, isRealObject, setOnAllPathLevels } from './helpers';
+import {
+  callOrValue,
+  isRealObject,
+  setOnAllPathLevels,
+  // getChangedSymbol,
+} from './helpers';
 import historyProxy from './history';
 
 type GlobalKeys = object;
@@ -10,9 +15,14 @@ type InternalGlobalState = object & {
   history?: boolean;
   skipHistoryUpdate?: boolean;
   rootTarget: object;
+  deletion?: boolean;
+  // TODO: think about it and get rid of it if applicable
+  currentChangedSymbol?: symbol;
+  changedObjects?: object;
 };
 
 interface DeepProxyConfig {
+  deletion?: boolean;
   target: object;
   globalState?: object;
   internalGlobalState?: InternalGlobalState;
@@ -58,15 +68,16 @@ const getProxyObject = ({
   new Proxy(target, {
     get(target: object, key: string) {
       const value = target[key];
-      if (internalGlobalState[QUICK_CHANGE]) {
-        return target[key];
-      }
+      // if (internalGlobalState[QUICK_CHANGE]) {
+      //   return target[key];
+      // }
       if (value && value[IS_PROXY]) return value;
       if (globalKeys[key]) {
         return callOrValue(globalKeys[key], [
           path,
           internalGlobalState,
           historyObj,
+          target,
         ]);
       }
       // TODO: This can be handled better, I think
@@ -107,8 +118,14 @@ const getProxyObject = ({
       }
       target[key] = value;
       // TODO: This should be handled differently
+      // internalGlobalState.currentChangedSymbol = getChangedSymbol();
+      internalGlobalState.changedObjects = new WeakMap();
       internalGlobalState[QUICK_CHANGE] = true;
-      setOnAllPathLevels(internalGlobalState.rootTarget, path);
+      setOnAllPathLevels(
+        internalGlobalState.rootTarget,
+        path.concat(key),
+        internalGlobalState.changedObjects,
+      );
       internalGlobalState[QUICK_CHANGE] = false;
       onSet(target, key, value, path, internalGlobalState);
       return true;
@@ -128,10 +145,19 @@ const getProxyObject = ({
           historyObj.history.push(changeDescription);
         }
       }
-      delete target[key];
+      if (internalGlobalState.deletion) delete target[key];
+      else {
+        target[key] = undefined;
+      }
       // TODO: This should be handled differently
+      // internalGlobalState.currentChangedSymbol = getChangedSymbol();
+      internalGlobalState.changedObjects = new WeakMap();
       internalGlobalState[QUICK_CHANGE] = true;
-      setOnAllPathLevels(internalGlobalState.rootTarget, path);
+      setOnAllPathLevels(
+        internalGlobalState.rootTarget,
+        path,
+        internalGlobalState.changedObjects,
+      );
       internalGlobalState[QUICK_CHANGE] = false;
       return true;
     },
@@ -145,9 +171,13 @@ export const deepProxy = ({
   onGet,
   onSet,
   onDelete,
+  deletion = true,
 }: DeepProxyConfig) => {
   const internalGlobalState: InternalGlobalState = {
     rootTarget: target,
+    deletion,
+    // currentChangedSymbol: getChangedSymbol(),
+    changedObjects: new WeakMap(),
     ...globalState,
   };
   let historyObj = { history: undefined };

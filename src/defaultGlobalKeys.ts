@@ -7,6 +7,8 @@ import {
   SKIP_HISTORY,
   HISTORY_BATCH,
   QUICK_CHANGE,
+  CHANGED,
+  TARGET,
 } from './constants';
 
 export const DEFAULT_GLOBAL_KEYS = {
@@ -39,4 +41,8 @@ export const DEFAULT_GLOBAL_KEYS = {
   [HISTORY_BATCH]: (_, __, historyObj) => () => {
     historyObj.history.batch();
   },
+
+  [CHANGED]: (_, internalGlobalState, __, target) =>
+    internalGlobalState.changedObjects.has(target),
+  [TARGET]: (_, __, ___, target) => target,
 };

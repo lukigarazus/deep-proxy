@@ -1,5 +1,5 @@
-import { set } from 'lodash';
-import { CHANGED } from './constants';
+import { get } from 'lodash';
+import { TARGET } from './constants';
 
 export const callOrValue = (obj: any, args: any[]) =>
   typeof obj === 'function' ? obj(...args) : obj;
@@ -7,8 +7,11 @@ export const callOrValue = (obj: any, args: any[]) =>
 export const isRealObject = (object: any) =>
   typeof object === 'object' && object.constructor.name === 'Object';
 
-export const setOnAllPathLevels = (rootObj, path) => {
-  for (let i = 1; i < path.length - 1; i++) {
-    set(rootObj, path.slice(0, i).concat(CHANGED));
+export const setOnAllPathLevels = (rootObj, path, changed) => {
+  for (let i = 0; i < path.length; i++) {
+    const got = get(rootObj, path.slice(0, i), rootObj);
+    changed.set(got[TARGET] || got, true);
   }
 };
+
+export const getChangedSymbol = () => Symbol('changed');
