@@ -1,7 +1,7 @@
 {
-  "name": "node-typescript-boilerplate",
-  "version": "0.0.0",
-  "description": "Minimalistic boilerplate to quick-start Node.js development in TypeScript.",
+  "name": "immutable-like-deep-proxy",
+  "version": "0.0.5",
+  "description": "Efficient deep proxy implementation with history and more",
   "engines": {
     "node": ">= 12.13 <13"
   },
@@ -30,10 +30,18 @@
     "test:watch": "jest --watch",
     "coverage": "google-chrome coverage/lcov-report/index.html"
   },
-  "author": "Jakub Synowiec <github@jakubsynowiec.info>",
-  "license": "Apache-2.0",
+  "author": "Łukasz Karczewski <ywnwa96@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.15",
     "tslib": "~1.10.0"
-  }
+  },
+  "keywords": [
+    "proxy",
+    "Proxy",
+    "ES6",
+    "Immutable",
+    "immutable"
+  ],
+  "homepage": "https://github.com/lukigarazus/immutable-like-deep-proxy"
 }

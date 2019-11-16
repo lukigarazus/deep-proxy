@@ -120,9 +120,9 @@ describe('deepProxy', () => {
     expect(state.c).toEqual(4);
   });
   it.only('Performance test', () => {
-    const loopsCases = Array(40)
+    const loopsCases = Array(10)
       .fill(undefined)
-      .map((el, i) => i * 10);
+      .map((el, i) => i * 10000);
     for (const loops of loopsCases) {
       performanceTester.timer();
       for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {

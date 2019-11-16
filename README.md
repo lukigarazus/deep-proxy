@@ -20,4 +20,4 @@ This one measures the same thing but without history tracking
 
 ### Use cases
 
-This package is obviously not meant to be used in situations requiring good read and write performance. It has been developed primarily for a GUI object editor and many of the existing features stem directly from this use-case.
+This package is obviously not meant to be used in situations requiring outstanding read and write performance. It has been developed primarily for a GUI object editor and many of the existing features stem directly from this use-case. If you want to perform millions of operations, do not use this package.

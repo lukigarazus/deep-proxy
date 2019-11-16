@@ -1,0 +1,12 @@
+node_modules/
+src/
+coverage/
+__tests__/
+visualize.js
+jest.config.js
+.travis.yml
+.prettierrc
+tsconfig.json
+tslint.json
+tsconfig.release.json
+yarn-error.log
