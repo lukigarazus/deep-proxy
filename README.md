@@ -12,11 +12,11 @@ This is an implementation of deep proxy with a twist. Unlike the most popular de
 
 This is a graph showing the difference in milliseconds (y axis) needed to perform various number (x axis) of sets, gets and deletes (orange, blue and red, respectively) between an object created with this package and a regular one.
 
-![withHistory](withHistory.png 'With History')
+![withHistory](performance-history-no-deletion.png 'With History')
 
 This one measures the same thing but without history tracking
 
-![withoutHistory](withoutHistory.png 'Without History')
+![withoutHistory](performance-no-history-no-deletion.png 'Without History')
 
 ### Use cases
 

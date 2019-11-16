@@ -119,7 +119,7 @@ describe('deepProxy', () => {
     expect(state.b).toEqual(3);
     expect(state.c).toEqual(4);
   });
-  it.skip('Performance test', () => {
+  it.only('Performance test', () => {
     const loopsCases = Array(40)
       .fill(undefined)
       .map((el, i) => i * 10);
@@ -204,9 +204,9 @@ describe('deepProxy', () => {
         })),
       ],
       (() => {
-        const history = config.history ? 'history' : 'no history';
-        const deletion = config.deletion ? 'deletion' : 'no deletion';
-        return `performance - ${history} - ${deletion}`;
+        const history = config.history ? 'history' : 'no-history';
+        const deletion = config.deletion ? 'deletion' : 'no-deletion';
+        return `performance-${history}-${deletion}`;
       })(),
     );
     expect(2).toEqual(2);
