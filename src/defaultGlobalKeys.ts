@@ -1,5 +1,4 @@
 import {
-  BATCH,
   IS_PROXY,
   NEXT,
   PREVIOUS,
@@ -12,10 +11,6 @@ import {
 } from './constants';
 
 export const DEFAULT_GLOBAL_KEYS = {
-  [BATCH]: (_, globalState) => {
-    globalState[BATCH] = !globalState[BATCH];
-  },
-
   [IS_PROXY]: true,
 
   [NEXT]: (_, globalState, historyObj) => () => {

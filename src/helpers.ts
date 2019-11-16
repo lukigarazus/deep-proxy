@@ -14,4 +14,4 @@ export const setOnAllPathLevels = (rootObj, path, changed) => {
   }
 };
 
-export const getChangedSymbol = () => Symbol('changed');
+// export const getChangedSymbol = () => Symbol('changed');

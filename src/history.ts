@@ -84,6 +84,8 @@ export default (initObj: object, limit: number) => {
               this.get(target, 'push')(batchedStep);
             } else this.batchedStep = [];
           };
+        case 'step':
+          return step;
         default:
           return new Error('Use history API!');
       }

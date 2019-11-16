@@ -1,6 +1,3 @@
-// This symbol is used to start a batch of object mutations
-export const BATCH = Symbol('batch');
-
 // This symbol is used for proxy checking
 export const IS_PROXY = Symbol('is_proxy');
 

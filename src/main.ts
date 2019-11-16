@@ -133,6 +133,7 @@ const getProxyObject = ({
     deleteProperty(target: object, key: string) {
       if (internalGlobalState[QUICK_CHANGE]) {
         delete target[key];
+        return true;
       }
       if (internalGlobalState.history) {
         const changeDescription: ChangeDescription = {
@@ -159,6 +160,7 @@ const getProxyObject = ({
         internalGlobalState.changedObjects,
       );
       internalGlobalState[QUICK_CHANGE] = false;
+      onDelete(target, key, path, internalGlobalState);
       return true;
     },
   });

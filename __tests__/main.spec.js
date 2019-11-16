@@ -6,6 +6,7 @@ const {
   HISTORY,
   HISTORY_BATCH,
   CHANGED,
+  QUICK_CHANGE,
 } = require('../src/constants');
 const { plot } = require('../visualize');
 
@@ -210,12 +211,34 @@ describe('deepProxy', () => {
     );
     expect(2).toEqual(2);
   });
-  it('Changes are saved', async () => {
+  it('Changes are saved', () => {
     state.a = {};
     expect(state[CHANGED]).toEqual(true);
     state.a.b = {};
     expect(state.a[CHANGED]).toEqual(true);
     state.a.b.c = 2;
     expect(state.a.b[CHANGED]).toEqual(true);
+  });
+  it('Deleting a key works', () => {
+    state.a = 2;
+    expect(state.a).toEqual(2);
+    delete state.a;
+    expect(state.a).toEqual(undefined);
+  });
+  it('Quick change mode words for deletion and set', () => {
+    state.a = 2;
+    expect(state.a).toEqual(2);
+    state[QUICK_CHANGE]();
+    delete state.a;
+    state.b = 3;
+    state[QUICK_CHANGE]();
+    expect(state.a).toEqual(undefined);
+    expect(state.b).toEqual(3);
+    expect(state[HISTORY].history.step).toEqual(1);
+  });
+  it('History cannot be interacted with outside of its API', async () => {
+    expect(state[HISTORY].history.length.constructor.name).toEqual('Error');
+    state[HISTORY].history[2] = 5;
+    // expect(state[HISTORY].history).toEqual([]);
   });
 });
