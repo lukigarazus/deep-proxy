@@ -1,6 +1,6 @@
 {
   "name": "immutable-like-deep-proxy",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Efficient deep proxy implementation with history and more",
   "engines": {
     "node": ">= 12.13 <13"
