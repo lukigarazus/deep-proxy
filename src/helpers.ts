@@ -2,7 +2,9 @@ import { get } from 'lodash';
 import { TARGET } from './constants';
 
 export const isRealObject = (object: any) =>
-  typeof object === 'object' && object.constructor.name === 'Object';
+  typeof object === 'object' &&
+  object &&
+  ['Object', 'Array'].includes(object.constructor.name);
 
 export const setOnAllPathLevels = (rootObj, path, changed) => {
   for (let i = 0; i < path.length; i++) {
