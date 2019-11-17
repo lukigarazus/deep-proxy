@@ -31,8 +31,47 @@ const applyChange = (
   obj[SKIP_HISTORY]();
 };
 
-export default (initObj: object, limit: number) => {
+export default (
+  initObj: object,
+  limit: number,
+  // historyBatchInterval?: number,
+) => {
   let step = 0;
+  // historyBatchInterval
+  //   ? (_, target) =>
+  //       debounce(value => {
+  //         console.log('PUSHING VALUE', value);
+  //         if (step < target.length - 1) {
+  //           while (target.length - 1 !== step) {
+  //             target.pop();
+  //           }
+  //         }
+  //         if (target.length + 1 > limit) {
+  //           target.shift();
+  //         }
+  //         target.push(value);
+  //         step = Math.min(step + 1, limit);
+  //         return target.length;
+  //       }, historyBatchInterval)
+  //   :
+  const push = (proxy, target) => value => {
+    if (proxy.batchedStep) {
+      // TODO: There maybe should be a limit on this
+      proxy.batchedStep.push(value);
+      return target.length;
+    }
+    if (step < target.length - 1) {
+      while (target.length - 1 !== step) {
+        target.pop();
+      }
+    }
+    if (target.length + 1 > limit) {
+      target.shift();
+    }
+    target.push(value);
+    step = Math.min(step + 1, limit);
+    return target.length;
+  };
   // TODO: Implement limits here
   const historyObjectProxy = new Proxy([], {
     set() {
@@ -41,24 +80,7 @@ export default (initObj: object, limit: number) => {
     get(target, key) {
       switch (key) {
         case 'push':
-          return value => {
-            if (this.batchedStep) {
-              // TODO: There maybe should be a limit on this
-              this.batchedStep.push(value);
-              return target.length;
-            }
-            if (step < target.length - 1) {
-              while (target.length - 1 !== step) {
-                target.pop();
-              }
-            }
-            if (target.length + 1 > limit) {
-              target.shift();
-            }
-            target.push(value);
-            step = Math.min(step + 1, limit);
-            return target.length;
-          };
+          return push(this, target);
         case 'previous':
           return () => {
             step = Math.max(step - 1, 0);

@@ -1,5 +1,6 @@
 const { deepProxy } = require('../src/main');
 const {
+  PATH,
   IS_PROXY,
   PREVIOUS,
   NEXT,
@@ -42,203 +43,292 @@ const performanceTester = {
   },
 };
 
-const getState = () => {
-  const obj = {};
-  const globalState = {};
-  const globalKeys = { [TEST_KEY]: 2 };
-  const config = {
-    target: obj,
-    globalState,
-    globalKeys,
-    history: true,
-    deletion: false,
-  };
-  const state = deepProxy(config);
-  return { config, state };
-};
+for (const history of [true, false]) {
+  for (const deletion of [true, false]) {
+    describe('deepProxy', () => {
+      let state, config;
+      const getState = () => {
+        const obj = {};
+        const globalState = {};
+        const globalActions = { [TEST_KEY]: () => 2 };
+        const config = {
+          target: obj,
+          globalState,
+          globalActions,
+          history,
+          deletion,
+        };
+        const state = deepProxy(config);
+        return { config, state };
+      };
 
-describe('deepProxy', () => {
-  let state, config;
+      beforeEach(() => {
+        const obj = getState();
+        state = obj.state;
+        config = obj.config;
+      });
+      it('Custom global keys work', () => {
+        expect(state[TEST_KEY]).toEqual(2);
+      });
+      it('Proxification of added objects works', () => {
+        state.obj = {};
+        expect(state.obj[IS_PROXY]).toEqual(true);
+      });
+      it('Navigation works', () => {
+        if (config.history) {
+          state.a = 2;
+          expect(state.a).toEqual(2);
+          state[PREVIOUS]();
+          expect(state.a).toEqual(undefined);
+          state[NEXT]();
+          expect(state.a).toEqual(2);
+        } else {
+          expect(() => state[PREVIOUS]()).toThrow();
+          expect(() => state[NEXT]()).toThrow();
+          expect(() => state[HISTORY_BATCH]()).toThrow();
+        }
+      });
+      it('Navigation limit works', () => {
+        if (config.history) {
+          for (let i = 0; i < 120; i++) {
+            state.b = i;
+          }
+          expect(state.b).toEqual(119);
+          for (let i = 0; i < 120; i++) {
+            state[PREVIOUS]();
+          }
 
-  beforeEach(() => {
-    const obj = getState();
-    state = obj.state;
-    config = obj.config;
-  });
-  it('Custom global keys work', () => {
-    expect(state[TEST_KEY]).toEqual(2);
-  });
-  it('Proxification of added objects works', () => {
-    state.obj = {};
-    expect(state.obj[IS_PROXY]).toEqual(true);
-  });
-  it('Navigation works', () => {
-    state.a = 2;
-    expect(state.a).toEqual(2);
-    state[PREVIOUS]();
-    expect(state.a).toEqual(undefined);
-    state[NEXT]();
-    expect(state.a).toEqual(2);
-  });
-  it('Navigation limit works', () => {
-    for (let i = 0; i < 120; i++) {
-      state.b = i;
-    }
-    expect(state.b).toEqual(119);
-    for (let i = 0; i < 120; i++) {
-      state[PREVIOUS]();
-    }
+          expect(state.b).toEqual(19);
+        } else {
+          expect(() => state[PREVIOUS]()).toThrow();
+        }
+      });
+      it('Navigation on nested changes works', () => {
+        if (config.history) {
+          state.c = {};
+          state.c.a = 1;
+          // expect(2).toEqual(2);
+          expect(state.c.a).toEqual(1);
+          state[PREVIOUS]();
+          expect(state.c.a).toEqual(undefined);
+          state[NEXT]();
+          expect(state.c.a).toEqual(1);
+        } else {
+          expect(() => state[PREVIOUS]()).toThrow();
+        }
+      });
+      it('Change batches work', () => {
+        if (config.history) {
+          state[HISTORY_BATCH]();
+          state.a = 2;
+          state.b = 3;
+          state.c = 4;
+          expect(state.a).toEqual(2);
+          expect(state.b).toEqual(3);
+          expect(state.c).toEqual(4);
+          state[HISTORY_BATCH]();
+          state[PREVIOUS]();
+          expect(state.a).toEqual(undefined);
+          expect(state.b).toEqual(undefined);
+          expect(state.c).toEqual(undefined);
+          state[NEXT]();
+          expect(state.a).toEqual(2);
+          expect(state.b).toEqual(3);
+          expect(state.c).toEqual(4);
+        } else {
+          expect(() => state[PREVIOUS]()).toThrow();
+        }
+      });
+      it.skip('Performance test', () => {
+        const loopsCases = Array(10)
+          .fill(undefined)
+          .map((el, i) => i * 10000);
+        for (const loops of loopsCases) {
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              state[key] = { a: 1 };
+              state[key].b = 2;
+            }
+          }
+          performanceTester.timer('proxy', 'setting');
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              const a = state[key];
+              const b = state[key].b;
+            }
+          }
+          performanceTester.timer('proxy', 'getting');
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              delete state[key].b;
+              delete state[key];
+            }
+          }
+          performanceTester.timer('proxy', 'deleting');
+          const obj = {};
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              obj[key] = { a: 1 };
+              obj[key].b = 2;
+            }
+          }
+          performanceTester.timer('object', 'setting');
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              const a = obj[key];
+              const b = obj[key].b;
+            }
+          }
+          performanceTester.timer('object', 'getting');
+          performanceTester.timer();
+          for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
+            for (let i = 1; i <= loops; i++) {
+              const key = `${letter}${i}`;
+              delete obj[key].b;
+              delete obj[key];
+            }
+          }
+          performanceTester.timer('object', 'deleting');
+        }
+        const {
+          gettingStats,
+          settingStats,
+          deletingStats,
+        } = performanceTester.getResult();
+        plot(
+          [
+            ...gettingStats.map((el, i) => ({
+              x: loopsCases[i] * 26,
+              y: el,
+              c: 0,
+            })),
+            ...settingStats.map((el, i) => ({
+              x: loopsCases[i] * 26,
+              y: el,
+              c: 1,
+            })),
+            ...deletingStats.map((el, i) => ({
+              x: loopsCases[i] * 26,
+              y: el,
+              c: 2,
+            })),
+          ],
+          (() => {
+            const history = config.history ? 'history' : 'no-history';
+            const deletion = config.deletion ? 'deletion' : 'no-deletion';
+            return `performance-${history}-${deletion}`;
+          })(),
+        );
+        expect(2).toEqual(2);
+      });
+      it('Changes are saved', () => {
+        state.a = {};
+        expect(state[CHANGED]).toEqual(true);
+        state.a.b = {};
+        expect(state.a[CHANGED]).toEqual(true);
+        state.a.b.c = 2;
+        expect(state.a.b[CHANGED]).toEqual(true);
+      });
+      it('Deleting a key works', () => {
+        state.a = 2;
+        expect(state.a).toEqual(2);
+        delete state.a;
+        expect(state.a).toEqual(undefined);
+      });
+      it('Quick change mode words for deletion and set', () => {
+        state.a = 2;
+        expect(state.a).toEqual(2);
+        state[QUICK_CHANGE]();
+        delete state.a;
+        state.b = 3;
+        state[QUICK_CHANGE]();
+        expect(state.a).toEqual(undefined);
+        expect(state.b).toEqual(3);
+        if (config.history) {
+          expect(state[HISTORY].history.step).toEqual(1);
+        }
+      });
+      it('History cannot be interacted with outside of its API', async () => {
+        if (config.history) {
+          expect(state[HISTORY].history.length.constructor.name).toEqual(
+            'Error',
+          );
+          state[HISTORY].history[2] = 5;
+        } else {
+          expect(state[HISTORY].history).toEqual(undefined);
+        }
+        // expect(state[HISTORY].history).toEqual([]);
+      });
+      // it('History batch interval works', done => {
+      //   const obj = {};
+      //   const globalState = {};
+      //   const config = {
+      //     target: obj,
+      //     globalState,
+      //     globalActions: {},
+      //     history: true,
+      //     deletion: false,
+      //     historyBatchInterval: 100,
+      //   };
+      //   const state = deepProxy(config);
+      //   for (let i = 0; i < 10; i++) {
+      //     state[`a${i}`] = 2;
+      //   }
+      //   for (let i = 0; i < 10; i++) {
+      //     expect(state[`a${i}`]).toEqual(2);
+      //   }
+      //   setTimeout(() => {
+      //     state[PREVIOUS]();
+      //     done();
+      //   }, 200);
 
-    expect(state.b).toEqual(19);
-  });
-  it('Navigation on nested changes works', () => {
-    state.c = {};
-    state.c.a = 1;
-    // expect(2).toEqual(2);
-    expect(state.c.a).toEqual(1);
-    state[PREVIOUS]();
-    expect(state.c.a).toEqual(undefined);
-    state[NEXT]();
-    expect(state.c.a).toEqual(1);
-  });
-  it('Change batches work', () => {
-    state[HISTORY_BATCH]();
-    state.a = 2;
-    state.b = 3;
-    state.c = 4;
-    expect(state.a).toEqual(2);
-    expect(state.b).toEqual(3);
-    expect(state.c).toEqual(4);
-    state[HISTORY_BATCH]();
-    state[PREVIOUS]();
-    expect(state.a).toEqual(undefined);
-    expect(state.b).toEqual(undefined);
-    expect(state.c).toEqual(undefined);
-    state[NEXT]();
-    expect(state.a).toEqual(2);
-    expect(state.b).toEqual(3);
-    expect(state.c).toEqual(4);
-  });
-  it.skip('Performance test', () => {
-    const loopsCases = Array(10)
-      .fill(undefined)
-      .map((el, i) => i * 10000);
-    for (const loops of loopsCases) {
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          state[key] = { a: 1 };
-          state[key].b = 2;
-        }
-      }
-      performanceTester.timer('proxy', 'setting');
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          const a = state[key];
-          const b = state[key].b;
-        }
-      }
-      performanceTester.timer('proxy', 'getting');
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          delete state[key].b;
-          delete state[key];
-        }
-      }
-      performanceTester.timer('proxy', 'deleting');
-      const obj = {};
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          obj[key] = { a: 1 };
-          obj[key].b = 2;
-        }
-      }
-      performanceTester.timer('object', 'setting');
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          const a = obj[key];
-          const b = obj[key].b;
-        }
-      }
-      performanceTester.timer('object', 'getting');
-      performanceTester.timer();
-      for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
-        for (let i = 1; i <= loops; i++) {
-          const key = `${letter}${i}`;
-          delete obj[key].b;
-          delete obj[key];
-        }
-      }
-      performanceTester.timer('object', 'deleting');
-    }
-    const {
-      gettingStats,
-      settingStats,
-      deletingStats,
-    } = performanceTester.getResult();
-    plot(
-      [
-        ...gettingStats.map((el, i) => ({
-          x: loopsCases[i] * 26,
-          y: el,
-          c: 0,
-        })),
-        ...settingStats.map((el, i) => ({
-          x: loopsCases[i] * 26,
-          y: el,
-          c: 1,
-        })),
-        ...deletingStats.map((el, i) => ({
-          x: loopsCases[i] * 26,
-          y: el,
-          c: 2,
-        })),
-      ],
-      (() => {
-        const history = config.history ? 'history' : 'no-history';
-        const deletion = config.deletion ? 'deletion' : 'no-deletion';
-        return `performance-${history}-${deletion}`;
-      })(),
-    );
-    expect(2).toEqual(2);
-  });
-  it('Changes are saved', () => {
-    state.a = {};
-    expect(state[CHANGED]).toEqual(true);
-    state.a.b = {};
-    expect(state.a[CHANGED]).toEqual(true);
-    state.a.b.c = 2;
-    expect(state.a.b[CHANGED]).toEqual(true);
-  });
-  it('Deleting a key works', () => {
-    state.a = 2;
-    expect(state.a).toEqual(2);
-    delete state.a;
-    expect(state.a).toEqual(undefined);
-  });
-  it('Quick change mode words for deletion and set', () => {
-    state.a = 2;
-    expect(state.a).toEqual(2);
-    state[QUICK_CHANGE]();
-    delete state.a;
-    state.b = 3;
-    state[QUICK_CHANGE]();
-    expect(state.a).toEqual(undefined);
-    expect(state.b).toEqual(3);
-    expect(state[HISTORY].history.step).toEqual(1);
-  });
-  it('History cannot be interacted with outside of its API', async () => {
-    expect(state[HISTORY].history.length.constructor.name).toEqual('Error');
-    state[HISTORY].history[2] = 5;
-    // expect(state[HISTORY].history).toEqual([]);
-  });
-});
+      //   // for (let i = 0; i < 10; i++) {
+      //   //   expect(state[`a${i}`]).toEqual(undefined);
+      //   // }
+      // });
+      it('Global state works with global actions', () => {
+        const obj = {};
+        const globalState = { obj: {} };
+        const FLASH = Symbol('flash');
+        const globalActions = {
+          [FLASH]: (_, globalState) => () => {
+            globalState.obj.a = 2;
+          },
+        };
+        const config = {
+          target: obj,
+          globalState,
+          globalActions,
+          history: true,
+          deletion: false,
+        };
+        const state = deepProxy(config);
+        state[FLASH]();
+        expect(globalState.obj.a).toEqual(2);
+      });
+      it('Path retrieval works', () => {
+        state.a = { b: { c: { d: { e: { f: { g: { h: {} } } } } } } };
+        expect(state.a.b.c.d.e.f.g.h[PATH]).toEqual([
+          'a',
+          'b',
+          'c',
+          'd',
+          'e',
+          'f',
+          'g',
+          'h',
+        ]);
+      });
+    });
+  }
+}

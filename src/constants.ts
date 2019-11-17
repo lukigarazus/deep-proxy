@@ -22,3 +22,6 @@ export const QUICK_CHANGE = Symbol('quick_change');
 
 // This is used to retrieve the original object from a proxy
 export const TARGET = Symbol('target');
+
+// This is used to retrieve path
+export const PATH = Symbol('path');

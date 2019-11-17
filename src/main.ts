@@ -1,52 +1,29 @@
-import { Path, History, ChangeDescription } from './types/index';
-import { IS_PROXY, QUICK_CHANGE } from './constants';
-import { DEFAULT_GLOBAL_KEYS } from './defaultGlobalKeys';
 import {
-  callOrValue,
+  Path,
+  History,
+  ChangeDescription,
+  DeepProxyConfig,
+  InternalGlobalState,
+  GlobalActions,
+} from './types/index';
+import { IS_PROXY, QUICK_CHANGE } from './constants';
+import { DEFAULT_GLOBAL_ACTIONS } from './defaultGlobalActions';
+import {
   isRealObject,
   setOnAllPathLevels,
   // getChangedSymbol,
 } from './helpers';
 import historyProxy from './history';
 
-type GlobalKeys = object;
-
-type InternalGlobalState = object & {
-  history?: boolean;
-  skipHistoryUpdate?: boolean;
-  rootTarget: object;
-  deletion?: boolean;
-  // TODO: think about it and get rid of it if applicable
-  currentChangedSymbol?: symbol;
-  changedObjects?: object;
-};
-
-interface DeepProxyConfig {
-  deletion?: boolean;
-  target: object;
-  globalState?: object;
-  internalGlobalState?: InternalGlobalState;
-  globalKeys: GlobalKeys;
-  history?: boolean;
-  onGet?: (
-    target: object,
-    key: string,
-    path: Path,
-    internalGlobalState: object,
-  ) => any;
-  onSet?: (target, key, value, path, internalGlobalState) => any;
-  onDelete?: (target, key, path, internalGlobalState) => any;
-}
-
-const attachDefaultGlobalKeys = (globalKeys: GlobalKeys) => {
-  Object.assign(globalKeys, DEFAULT_GLOBAL_KEYS);
+const attachDefaultGlobalActions = (globalActions: GlobalActions) => {
+  return Object.assign({}, globalActions || {}, DEFAULT_GLOBAL_ACTIONS);
 };
 
 // This has been taken out of the main function since we have to create nested proxies the same way but without the initial deepProxy work
 const getProxyObject = ({
   target,
   historyObj,
-  globalKeys,
+  globalActions,
   globalState,
   internalGlobalState,
   onGet = () => {},
@@ -61,6 +38,7 @@ const getProxyObject = ({
     return Number(a) + 2;
   },
   path,
+  deletion,
 }: DeepProxyConfig & {
   path: Path;
   historyObj: { history: History };
@@ -72,13 +50,14 @@ const getProxyObject = ({
       //   return target[key];
       // }
       if (value && value[IS_PROXY]) return value;
-      if (globalKeys[key]) {
-        return callOrValue(globalKeys[key], [
+      if (globalActions[key]) {
+        // console.log(globalActions);
+        return globalActions[key](
           path,
           internalGlobalState,
           historyObj,
           target,
-        ]);
+        );
       }
       // TODO: This can be handled better, I think
       if (isRealObject(value)) {
@@ -87,13 +66,14 @@ const getProxyObject = ({
         const proxy = getProxyObject({
           target: value,
           historyObj,
-          globalKeys,
+          globalActions,
           globalState,
           internalGlobalState,
           onGet,
           onSet,
           onDelete,
           path: path.concat(key),
+          deletion,
         });
         target[key] = proxy;
         return proxy;
@@ -107,6 +87,7 @@ const getProxyObject = ({
         return true;
       }
       if (internalGlobalState.history) {
+        // TODO: Creating a new object here might be redundant. Think about it
         const changeDescription: ChangeDescription = {
           path: path.concat(key),
           oldValue: target[key],
@@ -136,6 +117,7 @@ const getProxyObject = ({
         return true;
       }
       if (internalGlobalState.history) {
+        // TODO: Creating a new object here might be redundant. Think about it
         const changeDescription: ChangeDescription = {
           path: path.concat(key),
           oldValue: target[key],
@@ -146,7 +128,7 @@ const getProxyObject = ({
           historyObj.history.push(changeDescription);
         }
       }
-      if (internalGlobalState.deletion) delete target[key];
+      if (deletion) delete target[key];
       else {
         target[key] = undefined;
       }
@@ -168,7 +150,7 @@ const getProxyObject = ({
 export const deepProxy = ({
   target,
   globalState,
-  globalKeys,
+  globalActions,
   history = false,
   onGet,
   onSet,
@@ -176,24 +158,25 @@ export const deepProxy = ({
   deletion = true,
 }: DeepProxyConfig) => {
   const internalGlobalState: InternalGlobalState = {
+    ...(globalState || {}),
     rootTarget: target,
-    deletion,
-    // currentChangedSymbol: getChangedSymbol(),
     changedObjects: new WeakMap(),
-    ...globalState,
   };
   let historyObj = { history: undefined };
   internalGlobalState.history = history;
-  attachDefaultGlobalKeys(globalKeys);
+  const customAndDefaultGlobalActions = attachDefaultGlobalActions(
+    globalActions,
+  );
   const proxy = getProxyObject({
     target,
     historyObj,
-    globalKeys,
+    globalActions: customAndDefaultGlobalActions,
     internalGlobalState,
     onGet,
     onSet,
     onDelete,
     path: [],
+    deletion,
   });
   if (history) {
     historyObj.history = historyProxy(proxy, 100);

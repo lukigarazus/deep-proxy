@@ -8,19 +8,28 @@ import {
   QUICK_CHANGE,
   CHANGED,
   TARGET,
+  PATH,
 } from './constants';
 
-export const DEFAULT_GLOBAL_KEYS = {
-  [IS_PROXY]: true,
+export const DEFAULT_GLOBAL_ACTIONS = {
+  [IS_PROXY]: () => true,
 
   [NEXT]: (_, globalState, historyObj) => () => {
-    globalState.historyChanged = true;
-    historyObj.history.next();
+    if (historyObj.history) {
+      globalState.historyChanged = true;
+      historyObj.history.next();
+    } else {
+      throw new Error('History was not enabled!');
+    }
   },
 
   [PREVIOUS]: (_, globalState, historyObj) => () => {
-    globalState.historyChanged = true;
-    historyObj.history.previous();
+    if (historyObj.history) {
+      globalState.historyChanged = true;
+      historyObj.history.previous();
+    } else {
+      throw new Error('History was not enabled!');
+    }
   },
 
   [HISTORY]: (_, __, historyObj) => historyObj,
@@ -34,10 +43,16 @@ export const DEFAULT_GLOBAL_KEYS = {
   },
 
   [HISTORY_BATCH]: (_, __, historyObj) => () => {
-    historyObj.history.batch();
+    if (historyObj.history) historyObj.history.batch();
+    else {
+      throw new Error('History was not enabled!');
+    }
   },
 
   [CHANGED]: (_, internalGlobalState, __, target) =>
     internalGlobalState.changedObjects.has(target),
+
   [TARGET]: (_, __, ___, target) => target,
+
+  [PATH]: path => path,
 };

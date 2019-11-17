@@ -1,9 +1,6 @@
 import { get } from 'lodash';
 import { TARGET } from './constants';
 
-export const callOrValue = (obj: any, args: any[]) =>
-  typeof obj === 'function' ? obj(...args) : obj;
-
 export const isRealObject = (object: any) =>
   typeof object === 'object' && object.constructor.name === 'Object';
 
