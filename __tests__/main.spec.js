@@ -119,7 +119,7 @@ describe('deepProxy', () => {
     expect(state.b).toEqual(3);
     expect(state.c).toEqual(4);
   });
-  it.only('Performance test', () => {
+  it.skip('Performance test', () => {
     const loopsCases = Array(10)
       .fill(undefined)
       .map((el, i) => i * 10000);
