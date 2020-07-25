@@ -57,6 +57,7 @@ for (const history of [true, false]) {
           globalActions,
           history,
           deletion,
+          handlers: {},
         };
         const state = deepProxy(config);
         return { config, state };
@@ -107,7 +108,6 @@ for (const history of [true, false]) {
         if (config.history) {
           state.c = {};
           state.c.a = 1;
-          // expect(2).toEqual(2);
           expect(state.c.a).toEqual(1);
           state[PREVIOUS]();
           expect(state.c.a).toEqual(undefined);
@@ -123,10 +123,10 @@ for (const history of [true, false]) {
           state.a = 2;
           state.b = 3;
           state.c = 4;
+          state[HISTORY_BATCH]();
           expect(state.a).toEqual(2);
           expect(state.b).toEqual(3);
           expect(state.c).toEqual(4);
-          state[HISTORY_BATCH]();
           state[PREVIOUS]();
           expect(state.a).toEqual(undefined);
           expect(state.b).toEqual(undefined);
@@ -142,7 +142,7 @@ for (const history of [true, false]) {
       it.skip('Performance test', () => {
         const loopsCases = Array(10)
           .fill(undefined)
-          .map((el, i) => i * 10000);
+          .map((el, i) => i * 1000);
         for (const loops of loopsCases) {
           performanceTester.timer();
           for (const letter of 'qwertyuiopasdfghjklzxcvbnm'.split('').sort()) {
@@ -231,13 +231,16 @@ for (const history of [true, false]) {
         );
         expect(2).toEqual(2);
       });
-      it('Changes are saved', () => {
+      it('Changes are saved', async () => {
         state.a = {};
         expect(state[CHANGED]).toEqual(true);
         state.a.b = {};
         expect(state.a[CHANGED]).toEqual(true);
         state.a.b.c = 2;
         expect(state.a.b[CHANGED]).toEqual(true);
+        state.b = {};
+        state.b.a = 2;
+        expect(state.a[CHANGED]).toEqual(false);
       });
       it('Deleting a key works', () => {
         state.a = 2;
@@ -247,15 +250,19 @@ for (const history of [true, false]) {
       });
       it('Quick change mode words for deletion and set', () => {
         state.a = 2;
+        state.c = {};
         expect(state.a).toEqual(2);
         state[QUICK_CHANGE]();
         delete state.a;
         state.b = 3;
+        state.c.a = 1;
         state[QUICK_CHANGE]();
         expect(state.a).toEqual(undefined);
         expect(state.b).toEqual(3);
+        // Change should not be registered
+        expect(state.c[CHANGED]).toEqual(false);
         if (config.history) {
-          expect(state[HISTORY].history.step).toEqual(1);
+          expect(state[HISTORY].history.step).toEqual(2);
         }
       });
       it('History cannot be interacted with outside of its API', async () => {
@@ -267,35 +274,7 @@ for (const history of [true, false]) {
         } else {
           expect(state[HISTORY].history).toEqual(undefined);
         }
-        // expect(state[HISTORY].history).toEqual([]);
       });
-      // it('History batch interval works', done => {
-      //   const obj = {};
-      //   const globalState = {};
-      //   const config = {
-      //     target: obj,
-      //     globalState,
-      //     globalActions: {},
-      //     history: true,
-      //     deletion: false,
-      //     historyBatchInterval: 100,
-      //   };
-      //   const state = deepProxy(config);
-      //   for (let i = 0; i < 10; i++) {
-      //     state[`a${i}`] = 2;
-      //   }
-      //   for (let i = 0; i < 10; i++) {
-      //     expect(state[`a${i}`]).toEqual(2);
-      //   }
-      //   setTimeout(() => {
-      //     state[PREVIOUS]();
-      //     done();
-      //   }, 200);
-
-      //   // for (let i = 0; i < 10; i++) {
-      //   //   expect(state[`a${i}`]).toEqual(undefined);
-      //   // }
-      // });
       it('Global state works with global actions', () => {
         const obj = {};
         const globalState = { obj: {} };
@@ -309,6 +288,7 @@ for (const history of [true, false]) {
           target: obj,
           globalState,
           globalActions,
+          handlers: {},
           history: true,
           deletion: false,
         };

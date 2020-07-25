@@ -23,6 +23,7 @@ export type InternalGlobalState = object & {
   // TODO: think about it and get rid of it if applicable
   currentChangedSymbol?: symbol;
   changedObjects?: object;
+  rootProxy: object;
 };
 
 export interface DeepProxyConfig {
@@ -33,12 +34,14 @@ export interface DeepProxyConfig {
   globalActions: GlobalActions;
   history?: boolean;
   // historyBatchInterval?: number;
-  onGet?: (
-    target: object,
-    key: string,
-    path: Path,
-    internalGlobalState: object,
-  ) => any;
-  onSet?: (target, key, value, path, internalGlobalState) => any;
-  onDelete?: (target, key, path, internalGlobalState) => any;
+  handlers: {
+    onGet?: (
+      target: object,
+      key: string,
+      path: Path,
+      internalGlobalState: object,
+    ) => any;
+    onSet?: (target, key, value, path, internalGlobalState, oldValue) => any;
+    onDelete?: (target, key, path, internalGlobalState, oldValue) => any;
+  };
 }

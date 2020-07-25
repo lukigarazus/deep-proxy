@@ -9,6 +9,7 @@ import {
   CHANGED,
   TARGET,
   PATH,
+  CHANGE_BATCH,
 } from './constants';
 
 export const DEFAULT_GLOBAL_ACTIONS = {
@@ -44,9 +45,6 @@ export const DEFAULT_GLOBAL_ACTIONS = {
 
   [HISTORY_BATCH]: (_, __, historyObj) => () => {
     if (historyObj.history) historyObj.history.batch();
-    else {
-      throw new Error('History was not enabled!');
-    }
   },
 
   [CHANGED]: (_, internalGlobalState, __, target) =>
@@ -55,4 +53,8 @@ export const DEFAULT_GLOBAL_ACTIONS = {
   [TARGET]: (_, __, ___, target) => target,
 
   [PATH]: path => path,
+
+  [CHANGE_BATCH]: (_, internalGlobalState) => () => {
+    internalGlobalState[CHANGE_BATCH] = !internalGlobalState[CHANGE_BATCH];
+  },
 };

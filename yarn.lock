@@ -2902,13 +2902,6 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.3"
 
-proxy-debounce-with-accumulator@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/proxy-debounce-with-accumulator/-/proxy-debounce-with-accumulator-0.0.4.tgz#2afd1c38917ae77e0dd31e296e78b6090fcb3f74"
-  integrity sha512-k/UpS1e7+JtnHigvCGduuIXOXMNMynwtESvHYDSXGneGy3Kyxr1YSEmd0YTPytZotPBw9+N2ixuVuWCgvrNZIQ==
-  dependencies:
-    tslib "~1.10.0"
-
 psl@^1.1.24, psl@^1.1.28:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/psl/-/psl-1.4.0.tgz#5dd26156cdb69fa1fdb8ab1991667d3f80ced7c2"

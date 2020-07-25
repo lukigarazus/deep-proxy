@@ -25,3 +25,6 @@ export const TARGET = Symbol('target');
 
 // This is used to retrieve path
 export const PATH = Symbol('path');
+
+// This is used to make sure quick changes on different object branches do not overwrite each other
+export const CHANGE_BATCH = Symbol('change_batch');

@@ -31,29 +31,8 @@ const applyChange = (
   obj[SKIP_HISTORY]();
 };
 
-export default (
-  initObj: object,
-  limit: number,
-  // historyBatchInterval?: number,
-) => {
+export default (initObj: object, limit: number) => {
   let step = 0;
-  // historyBatchInterval
-  //   ? (_, target) =>
-  //       debounce(value => {
-  //         console.log('PUSHING VALUE', value);
-  //         if (step < target.length - 1) {
-  //           while (target.length - 1 !== step) {
-  //             target.pop();
-  //           }
-  //         }
-  //         if (target.length + 1 > limit) {
-  //           target.shift();
-  //         }
-  //         target.push(value);
-  //         step = Math.min(step + 1, limit);
-  //         return target.length;
-  //       }, historyBatchInterval)
-  //   :
   const push = (proxy, target) => value => {
     if (proxy.batchedStep) {
       // TODO: There maybe should be a limit on this
