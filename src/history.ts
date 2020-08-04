@@ -1,4 +1,4 @@
-import { set } from 'lodash';
+import * as set from 'lodash.set';
 import { ChangeDescription } from './types/index';
 import { SKIP_HISTORY } from './constants';
 

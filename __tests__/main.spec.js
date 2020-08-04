@@ -8,8 +8,10 @@ const {
   HISTORY_BATCH,
   CHANGED,
   QUICK_CHANGE,
+  CHANGE_BATCH,
 } = require('../src/constants');
 const { plot } = require('../visualize');
+const { key } = require('vega');
 
 const TEST_KEY = Symbol('test-key');
 
@@ -86,7 +88,6 @@ for (const history of [true, false]) {
         } else {
           expect(() => state[PREVIOUS]()).toThrow();
           expect(() => state[NEXT]()).toThrow();
-          expect(() => state[HISTORY_BATCH]()).toThrow();
         }
       });
       it('Navigation limit works', () => {
@@ -308,6 +309,16 @@ for (const history of [true, false]) {
           'g',
           'h',
         ]);
+      });
+      it('Change batch works', () => {
+        const keys = ['a', 'b', 'c'];
+        keys.forEach(k => (state[k] = {}));
+        state[CHANGE_BATCH]();
+        keys.forEach(k => (state[k].a = 2));
+        state[CHANGE_BATCH]();
+        expect(keys.every(k => state[k][CHANGED])).toEqual(true);
+        state.a.a = 6;
+        expect(keys.every(k => state[k][CHANGED])).toEqual(false);
       });
     });
   }

@@ -1,4 +1,4 @@
-import { get } from 'lodash';
+import * as get from 'lodash.get';
 import { TARGET } from './constants';
 
 export const isRealObject = (object: any) =>

@@ -6,6 +6,7 @@ visualize.js
 jest.config.js
 .travis.yml
 .prettierrc
+.editorconfig
 tsconfig.json
 tslint.json
 tsconfig.release.json

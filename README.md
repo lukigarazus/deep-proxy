@@ -1,8 +1,8 @@
 ![coverage lines](coverage/badge-lines.svg 'Coverage lines') ![coverage functions](coverage/badge-functions.svg 'Coverage functions') ![coverage branches](coverage/badge-branches.svg 'Coverage branches') ![coverage statements](coverage/badge-statements.svg 'Coverage statements')
 
-# Immutable-like-deep-proxy
+# Deep proxy
 
-This is an implementation of deep proxy with a twist. Unlike the most popular deep proxy package out there this one caches nested proxies and avoids regenerating them on each get. There are also some additional features which come in handy for me in my other projects, like:
+This is an implementation of deep proxy with a twist. Unlike the most popular deep proxy package out there this one caches nested proxies and avoids regenerating them on each get. There are also some additional features which come in handy, like:
 
 1. History tracking and navigation
 1. Global keys
@@ -136,9 +136,31 @@ const GLOBAL_KEY = Symbol('global');
 
 const object = deepProxy({
   target: { a: { b: { c: {} } } },
-  globalState: { [GLOBAL_KEY]: 2 },
+  globalActions: { [GLOBAL_KEY]: () => 2 },
 });
 
 console.log(object[GLOBAL_KEY]); // 2
 console.log(object.a.b.c[GLOBAL_KEY]); // 2
 ```
+
+### Global state
+
+This is a similar concept. It enables you to initialize and use global object state, like this:
+
+```javascript
+import { deepProxy } from 'deep-proxy';
+
+const ADD_NUMBER = Symbol('add');
+const NUMBERS = Symbol('numbers');
+
+const object = deepProxy({
+  target: { a: { b: { c: {} } } },
+  globalActions: {
+    [ADD_NUMBER]: (_, globalState) => n => globalState.numbers.push(n),
+    [NUMBERS]: (_, globalState) => globalState.numbers, // global state is internal and cannot be accessed from the outside. You have to define your interface
+  },
+  globalState: { numbers: [] },
+});
+```
+
+One thing to remember: you have to initialize your global state like this, modifying the keys (adding, deleting, reassignment) is blocked once Deep Proxy is instantiated.
